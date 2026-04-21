@@ -125,6 +125,21 @@ static int starts_with_prefix(const char *path, const char *prefix) {
     return strncmp(path, prefix, n) == 0;
 }
 
+static int tree_build_level(const Index *index, const char *prefix, ObjectID *id_out) {
+    Tree tree;
+    tree.count = 0;
+    (void)index;
+    (void)prefix;
+
+    void *raw = NULL;
+    size_t raw_len = 0;
+    if (tree_serialize(&tree, &raw, &raw_len) != 0) return -1;
+
+    int rc = object_write(OBJ_TREE, raw, raw_len, id_out);
+    free(raw);
+    return rc;
+}
+
 // Build a tree hierarchy from the current index and write all tree
 // objects to the object store.
 //
@@ -139,6 +154,7 @@ static int starts_with_prefix(const char *path, const char *prefix) {
 //
 // Returns 0 on success, -1 on error.
 int tree_from_index(ObjectID *id_out) {
-    (void)id_out;
-    return -1;
+    Index index;
+    if (index_load(&index) != 0) return -1;
+    return tree_build_level(&index, "", id_out);
 }
