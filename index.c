@@ -127,7 +127,7 @@ int index_status(const Index *index) {
     if (untracked_count == 0) printf("  (nothing to show)\n");
     printf("\n");
 
-    return 0;
+    return index_save(index);
 }
 
 // ─── TODO: Implement these ───────────────────────────────────────────────────
