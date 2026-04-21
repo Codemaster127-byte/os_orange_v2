@@ -267,11 +267,17 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
     memcpy(header, buf, header_len);
 
     char type_str[16] = {0};
-    size_t declared_len = 0;
-    if (sscanf(header, "%15s %zu", type_str, &declared_len) != 2) {
+    unsigned long long declared_len_ull = 0;
+    char trailer[2] = {0};
+    if (sscanf(header, "%15s %llu%1s", type_str, &declared_len_ull, trailer) != 2) {
         free(buf);
         return -1;
     }
+    if (declared_len_ull > SIZE_MAX) {
+        free(buf);
+        return -1;
+    }
+    size_t declared_len = (size_t)declared_len_ull;
 
     ObjectType type;
     if (strcmp(type_str, "blob") == 0) type = OBJ_BLOB;
