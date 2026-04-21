@@ -128,8 +128,24 @@ static int starts_with_prefix(const char *path, const char *prefix) {
 static int tree_build_level(const Index *index, const char *prefix, ObjectID *id_out) {
     Tree tree;
     tree.count = 0;
-    (void)index;
-    (void)prefix;
+    size_t prefix_len = strlen(prefix);
+
+    for (int i = 0; i < index->count; i++) {
+        const char *full = index->entries[i].path;
+        if (!starts_with_prefix(full, prefix)) continue;
+
+        const char *rest = full + prefix_len;
+        if (*rest == '\0') continue;
+
+        const char *slash = strchr(rest, '/');
+        if (slash) continue;
+
+        if (tree.count >= MAX_TREE_ENTRIES) return -1;
+        TreeEntry *e = &tree.entries[tree.count++];
+        e->mode = index->entries[i].mode;
+        e->hash = index->entries[i].hash;
+        snprintf(e->name, sizeof(e->name), "%s", rest);
+    }
 
     void *raw = NULL;
     size_t raw_len = 0;
