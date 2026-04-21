@@ -120,6 +120,11 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 
 // ─── TODO: Implement these ──────────────────────────────────────────────────
 
+static int starts_with_prefix(const char *path, const char *prefix) {
+    size_t n = strlen(prefix);
+    return strncmp(path, prefix, n) == 0;
+}
+
 // Build a tree hierarchy from the current index and write all tree
 // objects to the object store.
 //
