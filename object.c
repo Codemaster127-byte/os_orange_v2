@@ -134,7 +134,10 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
     hash_to_hex(&id, hex);
 
     char shard_dir[512];
-    snprintf(shard_dir, sizeof(shard_dir), "%s/%.2s", OBJECTS_DIR, hex);
+    if (snprintf(shard_dir, sizeof(shard_dir), "%s/%.2s", OBJECTS_DIR, hex) >= (int)sizeof(shard_dir)) {
+        free(obj);
+        return -1;
+    }
     if (mkdir(shard_dir, 0755) != 0 && errno != EEXIST) {
         free(obj);
         return -1;
@@ -150,6 +153,7 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
         free(obj);
         return -1;
     }
+    (void)fchmod(fd, 0644);
 
     size_t off = 0;
     while (off < obj_len) {
