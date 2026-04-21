@@ -132,6 +132,12 @@ int index_status(const Index *index) {
 
 // ─── TODO: Implement these ───────────────────────────────────────────────────
 
+static int compare_index_entries(const void *a, const void *b) {
+    const IndexEntry *ea = (const IndexEntry *)a;
+    const IndexEntry *eb = (const IndexEntry *)b;
+    return strcmp(ea->path, eb->path);
+}
+
 // Load the index from .pes/index.
 //
 // HINTS - Useful functions:
@@ -140,8 +146,42 @@ int index_status(const Index *index) {
 //
 // Returns 0 on success, -1 on error.
 int index_load(Index *index) {
-    (void)index;
-    return -1;
+    index->count = 0;
+
+    FILE *f = fopen(INDEX_FILE, "r");
+    if (!f) {
+        return (errno == ENOENT) ? 0 : -1;
+    }
+
+    char line[2048];
+    while (fgets(line, sizeof(line), f)) {
+        if (index->count >= MAX_INDEX_ENTRIES) {
+            fclose(f);
+            return -1;
+        }
+
+        IndexEntry *e = &index->entries[index->count];
+        char hex[HASH_HEX_SIZE + 1] = {0};
+        unsigned long long mtime = 0;
+
+        int parsed = sscanf(line, "%o %64s %llu %u %511[^\n]",
+                            &e->mode, hex, &mtime, &e->size, e->path);
+        if (parsed != 5) {
+            fclose(f);
+            return -1;
+        }
+
+        if (hex_to_hash(hex, &e->hash) != 0) {
+            fclose(f);
+            return -1;
+        }
+
+        e->mtime_sec = (uint64_t)mtime;
+        index->count++;
+    }
+
+    fclose(f);
+    return 0;
 }
 
 // Save the index to .pes/index atomically.
